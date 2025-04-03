@@ -1,13 +1,14 @@
-name: LinkedIn CV Upload Automation
+name: Selenium LinkedIn Automation
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
-  workflow_dispatch:  # Allows manual trigger
+    - cron: "0 0 * * *"  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual runs
 
 jobs:
   run-selenium:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -16,8 +17,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get remove -y firefox  # Remove Snap-installed Firefox
-          sudo apt-get install -y firefox-esr  # Install proper version
-          wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-linux64.tar.gz
+          sudo add-apt-repository -y ppa:mozillateam/ppa
+          echo 'Package: *' | sudo tee /etc/apt/preferences.d/mozillateam > /dev/null
+          echo 'Pin: release o=LP-PPA-mozillateam' | sudo tee -a /etc/apt/preferences.d/mozillateam > /dev/null
+          echo 'Pin-Priority: 1001' | sudo tee -a /etc/apt/preferences.d/mozillateam > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y firefox
+
+      - name: Install Geckodriver
+        run: |
+          GECKO_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep -oP '"tag_name": "\K(.*?)(?=")')
+          wget "https://github.com/mozilla/geckodriver/releases/download/$GECKO_VERSION/geckodriver-linux64.tar.gz"
           tar -xvzf geckodriver-linux64.tar.gz
           chmod +x geckodriver
           sudo mv geckodriver /usr/local/bin/
