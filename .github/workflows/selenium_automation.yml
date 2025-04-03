@@ -3,7 +3,7 @@ name: LinkedIn CV Upload Automation
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
-  workflow_dispatch:  # Manual trigger support
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   run-selenium:
@@ -12,12 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      - name: Install Dependencies (Fix Firefox Issue)
         run: |
           sudo apt-get update
-          sudo apt-get install -y firefox
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz
-          tar -xvzf geckodriver-v0.33.0-linux64.tar.gz
+          sudo apt-get remove -y firefox  # Remove Snap-installed Firefox
+          sudo apt-get install -y firefox-esr  # Install proper version
+          wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-linux64.tar.gz
+          tar -xvzf geckodriver-linux64.tar.gz
           chmod +x geckodriver
           sudo mv geckodriver /usr/local/bin/
 
