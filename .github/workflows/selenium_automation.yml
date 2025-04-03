@@ -1,9 +1,9 @@
-name: Run Selenium Automation
+name: LinkedIn CV Upload Automation
 
 on:
-  workflow_dispatch:  # Ye manually run karne ka option enable karega
   schedule:
-    - cron: "0 12 * * *"  # Har din 12 PM UTC (India me 5:30 PM)
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:  # Manual trigger support
 
 jobs:
   run-selenium:
@@ -16,8 +16,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y firefox
-          wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-linux64.tar.gz
-          tar -xvzf geckodriver-linux64.tar.gz
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz
+          tar -xvzf geckodriver-v0.33.0-linux64.tar.gz
           chmod +x geckodriver
           sudo mv geckodriver /usr/local/bin/
 
