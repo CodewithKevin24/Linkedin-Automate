@@ -1,3 +1,10 @@
+name: Run Selenium Automation
+
+on:
+  workflow_dispatch:  # Ye manually run karne ka option enable karega
+  schedule:
+    - cron: "0 12 * * *"  # Har din 12 PM UTC (India me 5:30 PM)
+
 jobs:
   run-selenium:
     runs-on: ubuntu-latest
