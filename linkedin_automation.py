@@ -17,8 +17,7 @@ driver = webdriver.Firefox(options=options)
 # Fetch environment variables and set path
 EMAIL = os.getenv("LINKEDIN_EMAIL")
 PASSWORD = os.getenv("LINKEDIN_PASSWORD")
-WORKSPACE = os.getenv("GITHUB_WORKSPACE", "")  # GitHub Actions workspace
-FILE_PATH = os.path.join(WORKSPACE, os.getenv("FILE_PATH")  # CV ka path
+FILE_PATH = os.getenv("FILE_PATH")  # CV File Path
 
 # Open LinkedIn login page
 driver.get("https://www.linkedin.com/login")
