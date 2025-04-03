@@ -25,12 +25,27 @@ jobs:
           sudo apt-get install -y firefox
 
       - name: Install Geckodriver
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          GECKO_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep -oP '"tag_name": "\K(.*?)(?=")')
-          wget "https://github.com/mozilla/geckodriver/releases/download/$GECKO_VERSION/geckodriver-linux64.tar.gz"
-          tar -xvzf geckodriver-linux64.tar.gz
+          ASSET_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r '.assets[] | select(.name | endswith("linux64.tar.gz")) | .browser_download_url')
+          if [ -z "$ASSET_URL" ]; then
+            echo "Error: Failed to fetch Geckodriver asset URL"
+            exit 1
+          fi
+          wget "$ASSET_URL" -O geckodriver.tar.gz
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to download Geckodriver"
+            exit 1
+          fi
+          tar -xvzf geckodriver.tar.gz
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to extract Geckodriver"
+            exit 1
+          fi
           chmod +x geckodriver
           sudo mv geckodriver /usr/local/bin/
+          echo "Geckodriver installed successfully"
 
       - name: Set up Python
         uses: actions/setup-python@v4
