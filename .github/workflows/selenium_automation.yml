@@ -1,10 +1,3 @@
-name: Run Selenium Daily
-
-on:
-  schedule:
-    - cron: "0 12 * * *"  # Har din 12 PM UTC (India me 5:30 PM)
-  workflow_dispatch:  # Isse aap manually bhi run kar sakenge
-
 jobs:
   run-selenium:
     runs-on: ubuntu-latest
@@ -12,26 +5,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Setup Geckodriver (Firefox Driver)
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y firefox-esr
-          wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-v0.33.0-linux64.tar.gz
-          tar -xvzf geckodriver-v0.33.0-linux64.tar.gz
+          sudo apt-get install -y firefox
+          wget https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-linux64.tar.gz
+          tar -xvzf geckodriver-linux64.tar.gz
           chmod +x geckodriver
           sudo mv geckodriver /usr/local/bin/
 
-      - name: Run Selenium script
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Selenium Script
         env:
           LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}
           LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
           FILE_PATH: ${{ secrets.FILE_PATH }}
-        run: python linkedin_automation.py
+        run: |
+          python linkedin_automation.py
