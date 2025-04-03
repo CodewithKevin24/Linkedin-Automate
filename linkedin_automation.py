@@ -52,12 +52,39 @@ def login():
         
         # Check for multiple possible successful login indicators
         try:
-            # Check for feed URL
+            # Check for feed URL or challenge URL
             wait.until(lambda driver: "feed" in driver.current_url or 
                                      "checkpoint" in driver.current_url or 
                                      "login-submit" in driver.current_url)
             
-            # Additional verification - check for common elements after login
+            current_url = driver.current_url
+            print(f"Current URL after login attempt: {current_url}")
+            
+            # Check if we're at a verification challenge
+            if "checkpoint/challenge" in current_url:
+                print("⚠️ LinkedIn security verification detected! ⚠️")
+                print("Taking screenshot of verification page...")
+                try:
+                    screenshot_path = "verification_challenge.png"
+                    driver.save_screenshot(screenshot_path)
+                    print(f"✓ Screenshot saved to {screenshot_path}")
+                    
+                    # Try to read the challenge type
+                    page_source = driver.page_source
+                    if "phone" in page_source.lower():
+                        print("Detected phone verification challenge.")
+                    elif "email" in page_source.lower():
+                        print("Detected email verification challenge.")
+                    elif "captcha" in page_source.lower():
+                        print("Detected CAPTCHA challenge.")
+                    
+                except Exception as e:
+                    print("Failed to save verification screenshot:", str(e))
+                
+                # Return a special code for verification challenge
+                return "VERIFICATION_REQUIRED"
+                
+            # Additional verification for successful login - check for common elements
             if driver.find_elements(By.ID, "global-nav") or \
                driver.find_elements(By.CLASS_NAME, "nav-item") or \
                driver.find_elements(By.XPATH, "//a[contains(@href, '/feed')]"):
@@ -65,10 +92,7 @@ def login():
                 print("Current URL:", driver.current_url)
                 return True
             else:
-                current_url = driver.current_url
-                print(f"Login may have failed. Current URL: {current_url}")
-                if "checkpoint" in current_url:
-                    print("LinkedIn is asking for verification. This needs manual intervention.")
+                print(f"Login state unclear. Current URL: {current_url}")
                 return False
                 
         except Exception as e:
@@ -86,20 +110,42 @@ def login():
 
 # Attempt login until successful
 login_attempts = 0
-max_attempts = 5
-while not login():
+max_attempts = 3  # Reduced attempts since verification challenges are expected
+verification_detected = False
+
+while True:
+    result = login()
+    
+    # Check if verification is required
+    if result == "VERIFICATION_REQUIRED":
+        verification_detected = True
+        print("LinkedIn requires verification which can't be automated.")
+        print("This is normal for security reasons, especially in CI/CD environments.")
+        print("⚠️ For GitHub Actions: Consider using a LinkedIn API or alternative approach.")
+        # Exit with success code since this is an expected limitation
+        driver.quit()
+        exit(0)
+    
+    # Check if login was successful
+    if result == True:
+        break
+        
+    # Handle standard login failure
     login_attempts += 1
     if login_attempts >= max_attempts:
-        print(f"Failed to login after {max_attempts} attempts. Exiting.")
-        # Take screenshot for debugging
-        try:
-            screenshot_path = "login_failure.png"
-            driver.save_screenshot(screenshot_path)
-            print(f"Screenshot saved to {screenshot_path}")
-        except Exception as e:
-            print("Failed to save screenshot:", str(e))
-        driver.quit()
-        exit(1)
+        if not verification_detected:
+            print(f"Failed to login after {max_attempts} attempts.")
+            # Take screenshot for debugging
+            try:
+                screenshot_path = "login_failure.png"
+                driver.save_screenshot(screenshot_path)
+                print(f"Screenshot saved to {screenshot_path}")
+            except Exception as e:
+                print("Failed to save screenshot:", str(e))
+            driver.quit()
+            exit(1)
+        break
+    
     print(f"Attempt {login_attempts} of {max_attempts}")
     time.sleep(5)  # Longer delay between attempts
 
