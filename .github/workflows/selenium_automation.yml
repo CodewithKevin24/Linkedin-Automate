@@ -13,39 +13,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Dependencies (Fix Firefox Issue)
+      - name: Install Google Chrome
         run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
           sudo apt-get update
-          sudo apt-get remove -y firefox  # Remove Snap-installed Firefox
-          sudo add-apt-repository -y ppa:mozillateam/ppa
-          echo 'Package: *' | sudo tee /etc/apt/preferences.d/mozillateam > /dev/null
-          echo 'Pin: release o=LP-PPA-mozillateam' | sudo tee -a /etc/apt/preferences.d/mozillateam > /dev/null
-          echo 'Pin-Priority: 1001' | sudo tee -a /etc/apt/preferences.d/mozillateam > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y firefox
-
-      - name: Install Geckodriver
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ASSET_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r '.assets[] | select(.name | endswith("linux64.tar.gz")) | .browser_download_url')
-          if [ -z "$ASSET_URL" ]; then
-            echo "Error: Failed to fetch Geckodriver asset URL"
-            exit 1
-          fi
-          wget "$ASSET_URL" -O geckodriver.tar.gz
-          if [ $? -ne 0 ]; then
-            echo "Error: Failed to download Geckodriver"
-            exit 1
-          fi
-          tar -xvzf geckodriver.tar.gz
-          if [ $? -ne 0 ]; then
-            echo "Error: Failed to extract Geckodriver"
-            exit 1
-          fi
-          chmod +x geckodriver
-          sudo mv geckodriver /usr/local/bin/
-          echo "Geckodriver installed successfully"
+          sudo apt-get install -y google-chrome-stable
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -56,10 +29,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run Selenium Script
+      - name: Run LinkedIn Automation Script
         env:
           LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}
           LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
           FILE_PATH: ${{ secrets.FILE_PATH }}
-        run: |
-          python linkedin_automation.py
+        run: python linkedin_automation.py
