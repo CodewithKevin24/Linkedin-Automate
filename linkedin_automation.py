@@ -8,56 +8,53 @@ from selenium.webdriver.support import expected_conditions as EC
 # Retrieve environment variables
 EMAIL = os.getenv("LINKEDIN_EMAIL")
 PASSWORD = os.getenv("LINKEDIN_PASSWORD")
-FILE_PATH = os.getenv("FILE_PATH")  
+FILE_PATH = os.getenv("FILE_PATH")
 
-# Setup Chrome options using undetected_chromedriver's options
+# Configure Chrome options for stealth automation
 options = uc.ChromeOptions()
-# Note: Using headless mode may still increase detection. For testing, try running non-headless.
-options.add_argument("--headless=new")  # 'new' headless mode can be more stealthy
+# Headless mode can be detectable. If possible, test without headless mode before switching back.
+options.add_argument("--headless=new")
 options.add_argument("--disable-blink-features=AutomationControlled")
 options.add_argument("--incognito")
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " 
+options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
 
-# Initialize undetected Chrome driver
+# Initialize the undetected Chrome driver
 driver = uc.Chrome(options=options)
-
-# Open LinkedIn login page
-driver.get("https://www.linkedin.com/login")
 
 def login():
     try:
+        driver.get("https://www.linkedin.com/login")
         wait = WebDriverWait(driver, 10)
-        
-        # Wait for and fill in email and password
+
+        # Wait for and fill in email and password fields
         email_elem = wait.until(EC.presence_of_element_located((By.ID, "username")))
         email_elem.send_keys(EMAIL)
-        
+
         password_elem = driver.find_element(By.ID, "password")
         password_elem.send_keys(PASSWORD)
-        
-        # Optionally handle 'Keep me logged in' checkbox if present
+
+        # Optionally check/uncheck the "Keep me logged in" checkbox if it appears
         try:
-            remember_check = driver.find_element(By.ID, "rememberMeOptIn")
-            if remember_check.is_selected():
-                driver.execute_script("arguments[0].click();", remember_check)
+            remember_me = driver.find_element(By.ID, "rememberMeOptIn")
+            if remember_me.is_selected():
+                driver.execute_script("arguments[0].click();", remember_me)
         except Exception as e:
             print("Checkbox handling skipped:", str(e))
-        
-        # Click the login button
+
+        # Submit the login form
         login_button = driver.find_element(By.XPATH, '//button[@type="submit"]')
         login_button.click()
-        
-        # Wait for the new URL and check for possible outcomes
+
+        # Allow a longer time to process the login attempt
         wait = WebDriverWait(driver, 30)
         wait.until(lambda d: "feed" in d.current_url or 
-                           "checkpoint" in d.current_url or 
-                           "login-submit" in d.current_url)
-        
+                            "checkpoint" in d.current_url or 
+                            "login-submit" in d.current_url)
         current_url = driver.current_url
         print(f"Current URL after login attempt: {current_url}")
-        
-        # Detect security verification challenge
+
+        # Detect if LinkedIn security challenge is present
         if "checkpoint/challenge" in current_url:
             print("⚠️ LinkedIn security verification detected! ⚠️")
             screenshot_path = "verification_challenge.png"
@@ -75,17 +72,17 @@ def login():
             elif "captcha" in page_source:
                 print("Detected CAPTCHA challenge.")
             return "VERIFICATION_REQUIRED"
-        
-        # Check for elements typical of a successful login
-        if driver.find_elements(By.ID, "global-nav") or \
-           driver.find_elements(By.CLASS_NAME, "nav-item") or \
-           driver.find_elements(By.XPATH, "//a[contains(@href, '/feed')]"):
+
+        # Additional checks for a successful login
+        if (driver.find_elements(By.ID, "global-nav") or 
+            driver.find_elements(By.CLASS_NAME, "nav-item") or 
+            driver.find_elements(By.XPATH, "//a[contains(@href, '/feed')]")):
             print("Login successful!")
             return True
         else:
-            print("Login state unclear. Current URL:", current_url)
+            print(f"Login state unclear. Current URL: {current_url}")
             return False
-            
+
     except Exception as e:
         print("Login process failed, refreshing page and retrying...", str(e))
         print("Current URL:", driver.current_url)
@@ -93,7 +90,7 @@ def login():
         time.sleep(3)
         return False
 
-# Login attempts
+# Attempt login with a preset maximum number of retries
 login_attempts = 0
 max_attempts = 3
 verification_detected = False
@@ -102,7 +99,7 @@ while True:
     result = login()
     if result == "VERIFICATION_REQUIRED":
         verification_detected = True
-        print("LinkedIn requires verification which can't be automated.")
+        print("LinkedIn requires verification which cannot be automated reliably.")
         driver.quit()
         exit(0)
     if result == True:
@@ -132,7 +129,7 @@ def open_application_settings():
         print("Failed to open Application settings page:", str(e))
         return False
 
-# Ensure that the application settings page is reached
+# Ensure the application settings page is loaded
 while not open_application_settings():
     time.sleep(2)
 
